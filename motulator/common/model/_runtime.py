@@ -11,7 +11,7 @@ from tqdm import tqdm
 from motulator.common.control._base import ControlSystem
 from motulator.common.model._base import Model, ModelTimeSeries
 
-
+#TODO: Move solver to more common place as both simulation and runtime uses it
 # %%
 @dataclass
 class SolverCfg:
@@ -66,9 +66,9 @@ class SolverCfg:
 #    ctrl: Any
 
 
-class Simulation:
+class Runtime:
     """
-    Simulation environment.
+    Runtime environment.
 
     Parameters
     ----------
@@ -76,8 +76,6 @@ class Simulation:
         Continuous-time system model.
     ctrl : ControlSystem
         Discrete-time control system.
-    show_progress : bool, optional
-        Show progress during simulation, defaults to True.
     cfg : SolverCfg, optional
         Solver configuration parameters.
 
@@ -114,46 +112,47 @@ class Simulation:
             self.mdl.set_outputs(0.0)
 
             # Main simulation loop
-            progress_bar = None
-            if self.show_progress:
-                progress_bar = tqdm(
-                    total=t_stop,
-                    desc="Simulation",
-                    unit="s",
-                    bar_format="{l_bar}{bar}| {n:.2f}/{total:.2f} {unit}",
-                )
+            #progress_bar = None
+            #if self.show_progress:
+            #    progress_bar = tqdm(
+            #        total=t_stop,
+            #        desc="Simulation",
+            #        unit="s",
+            #        bar_format="{l_bar}{bar}| {n:.2f}/{total:.2f} {unit}",
+            #    )
 
-            def update_progress() -> None:
-                if progress_bar is not None:
-                    progress_bar.n = min(self.mdl.t0, t_stop)
-                    progress_bar.refresh()
+            #def update_progress() -> None:
+            #    if progress_bar is not None:
+            #        progress_bar.n = min(self.mdl.t0, t_stop)
+            #        progress_bar.refresh()
 
-            self._run_simulation_loop(t_stop, update_progress, N_eval)
+            self._run_runtime_loop(t_stop, update_progress, N_eval)
 
-            if progress_bar is not None:
-                progress_bar.n = t_stop
-                progress_bar.refresh()
-                progress_bar.close()
+            #if progress_bar is not None:
+            #    progress_bar.n = t_stop
+            #    progress_bar.refresh()
+            #    progress_bar.close()
 
         except FloatingPointError:
             print(f"Invalid value encountered at {self.mdl.t0:.2f} s.")
 
         # Post-process the solution data
-        mdl_ts = ModelTimeSeries(
-            self.mdl._history,
-            self.mdl.subsystems,
-            self.mdl.connections,
-            self.mdl.zoh_connections,
-        )
-        ctrl_ts = self.ctrl.post_process()
-        return SimulationResults(mdl_ts, ctrl_ts)
+        #mdl_ts = ModelTimeSeries(
+        #    self.mdl._history,
+        #    self.mdl.subsystems,
+        #    self.mdl.connections,
+        #    self.mdl.zoh_connections,
+        #)
+        #ctrl_ts = self.ctrl.post_process()
+        #return SimulationResults(mdl_ts, ctrl_ts)
 
     @np.errstate(invalid="raise")
-    def _run_simulation_loop(
-        self, t_stop: float, update_progress: Callable[[], None], N_eval: int
+    def _run_runtime_loop(
+        self, N_eval: int
     ) -> None:
         """Run the main simulation loop."""
-        while self.mdl.t0 <= t_stop:
+        #while self.mdl.t0 <= t_stop:
+        while True: #TODO: Make better condition
             # Control, computational delay, and carrier comparison
             T_s, ref_duty_ratio = self.ctrl(self.mdl)
             duty_ratio = self.mdl.delay(ref_duty_ratio)
@@ -188,4 +187,4 @@ class Simulation:
                     self.mdl.save(sol)
 
             # Update progress after each control step
-            update_progress()
+            #update_progress()
