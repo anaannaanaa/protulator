@@ -14,6 +14,10 @@ import motulator.drive.control.im as control
 from motulator.drive import model, utils
 
 # %%
+# Load speed reference file
+speed_ref = utils.load_reference("speed_reference.mot")
+
+# %%
 # Compute base values based on the nominal values.
 
 nom = utils.NominalValues(U=400, I=5, f=50, P=2.2e3, tau=14.6)
@@ -43,7 +47,8 @@ ctrl = control.VHzControlSystem(vhz_ctrl, slew_rate=2 * pi * 120)
 # %%
 # Set the speed reference and the external load torque.
 
-ctrl.set_speed_ref(lambda t: (t > 0.2) * base.w_M)
+#ctrl.set_speed_ref(lambda t: (t > 0.2) * base.w_M) # The simulation method
+ctrl.set_speed_ref(speed_ref) # TODO: implement realtime file fetching
 mdl.mechanics.set_external_load_torque(lambda t: (t > 0.8) * nom.tau)
 
 
