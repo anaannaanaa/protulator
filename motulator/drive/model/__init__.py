@@ -2,6 +2,7 @@
 
 from motulator.common.model._converter import FrequencyConverter, VoltageSourceConverter
 from motulator.common.model._simulation import Simulation
+from motulator.common.model._runtime import Runtime
 from motulator.drive.model._drive import Drive
 from motulator.drive.model._lc_filter import LCFilter
 from motulator.drive.model._machine import InductionMachine, SynchronousMachine
@@ -35,4 +36,5 @@ __all__ = [
     "SynchronousMachinePars",
     "TwoMassMechanicalSystem",
     "VoltageSourceConverter",
+    "Realtime",
 ]

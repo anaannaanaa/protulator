@@ -126,7 +126,7 @@ class Runtime:
             #        progress_bar.n = min(self.mdl.t0, t_stop)
             #        progress_bar.refresh()
 
-            self._run_runtime_loop(t_stop, update_progress, N_eval)
+            self._run_runtime_loop(N_eval)
 
             #if progress_bar is not None:
             #    progress_bar.n = t_stop

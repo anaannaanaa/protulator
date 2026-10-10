@@ -12,10 +12,11 @@ from math import pi
 
 import motulator.drive.control.im as control
 from motulator.drive import model, utils
+from fifo_reference import FIFOReference
 
 # %%
 # Load speed reference file
-speed_ref = utils.load_reference("speed_reference.mot")
+#speed_ref = utils.load_reference("speed_reference.mot")
 
 # %%
 # Compute base values based on the nominal values.
@@ -56,6 +57,8 @@ mdl.mechanics.set_external_load_torque(lambda t: (t > 0.8) * nom.tau)
 # %%
 # Create the simulation object, simulate, and plot the results in per-unit values.
 
-sim = model.Simulation(mdl, ctrl)
-res = sim.simulate(t_stop=1.6)
-utils.plot(res, base)
+#sim = model.Simulation(mdl, ctrl)
+run = model.Runtime(mdl, ctrl)
+#res = sim.simulate(t_stop=1.6)
+run.run()
+#utils.plot(res, base)
