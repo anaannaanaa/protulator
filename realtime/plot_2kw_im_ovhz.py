@@ -48,6 +48,7 @@ ctrl = control.VHzControlSystem(vhz_ctrl, slew_rate=2 * pi * 120)
 # Set the speed reference and the external load torque.
 
 #ctrl.set_speed_ref(lambda t: (t > 0.2) * base.w_M) # The simulation method
+speed_ref = FIFOReference("/tmp/speed_ref", initial_value=0.0)
 ctrl.set_speed_ref(speed_ref) # TODO: implement realtime file fetching
 mdl.mechanics.set_external_load_torque(lambda t: (t > 0.8) * nom.tau)
 
