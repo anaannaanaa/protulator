@@ -1,4 +1,4 @@
-"""Simulation environment."""
+"""Runtime environment."""
 
 import os
 from dataclasses import dataclass
