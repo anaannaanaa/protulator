@@ -10,6 +10,7 @@ from tqdm import tqdm
 
 from motulator.common.control._base import ControlSystem
 from motulator.common.model._base import Model, ModelTimeSeries
+from motulator.drive import utils
 
 #TODO: Move solver to more common place as both simulation and runtime uses it
 # %%
@@ -110,6 +111,8 @@ class Runtime:
         try:
             # Initialize outputs based on initial states
             self.mdl.set_outputs(0.0)
+            utils.init_plotting(self, self.base)
+            
 
             # Main simulation loop
             #progress_bar = None

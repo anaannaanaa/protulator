@@ -156,6 +156,108 @@ def _plot_flux_linkages(ax, ctrl, mdl, base: BaseValues) -> None:
     ax.set_ylim(0, ymax)
 
 
+def add_sample():
+    # TODO
+
+def _update_plot():
+    # TODO
+
+def init_plotting(    
+    self,
+    window: float = 5.0,
+    subplots: list[str] | None = None,
+    base: BaseValues | None = None,
+    y_lims: list[tuple[float, float] | None] | None = None,
+    y_ticks: list[ArrayLike | None] | None = None,
+    latex: bool = False,
+    interval: int = 50,
+    ):
+
+    self.window = window
+    self.lock = threading.Lock()
+
+    # Define supported subplot types and their axis labels.
+    subplot_map = {
+        "speed": ("Speed (rad/s)", "Speed (p.u.)"),
+        "torque": ("Torque (Nm)", "Torque (p.u.)"),
+        "current": ("Current (A)", "Current (p.u.)"),
+        "voltage": ("Voltage (V)", "Voltage (p.u.)"),
+        "flux": ("Flux linkage (Vs)", "Flux linkage (p.u.)"),
+    }
+
+    if subplots is None:
+        subplots = ["speed", "torque", "current", "voltage", "flux"]
+
+    if not subplots:
+        raise ValueError("At least one subplot must be selected.")
+
+    for name in subplots:
+        if name not in subplot_map:
+            raise ValueError(f"Unknown subplot name: {name}")
+
+    self.subplots = subplots
+
+    # Use the existing plotting style.
+    width, height = _setup_plot(latex)
+    height *= len(subplots) / 5
+
+    # Configure per-unit labels when base values are supplied.
+    self.pu_vals = base is not None
+    self.base = base if base is not None else BaseValues.unity()
+
+    # Initialize subplot axes.
+    self.fig, axes = plt.subplots(
+        len(subplots),
+        1,
+        figsize=(width, height),
+        sharex=True,
+        squeeze=False,
+    )
+    self.axes = axes[:, 0]
+
+    # Store recent samples independently for each subplot.
+    self.data = {
+        name: deque(maxlen=10000)
+        for name in subplots
+    }
+
+    # Initialize one line per subplot.
+    self.lines = {}
+
+    for i, (name, ax) in enumerate(zip(subplots, self.axes)):
+        si_label, pu_label = subplot_map[name]
+
+        self.lines[name], = ax.plot(
+            [],
+            [],
+            label=name.capitalize(),
+        )
+
+        ax.set_ylabel(pu_label if self.pu_vals else si_label)
+        ax.set_xlim(0, window)
+        ax.grid(True)
+        ax.legend()
+
+        if y_lims is not None and i < len(y_lims):
+            if y_lims[i] is not None:
+                ax.set_ylim(*y_lims[i])
+
+        if y_ticks is not None and i < len(y_ticks):
+            if y_ticks[i] is not None:
+                ax.set_yticks(y_ticks[i])
+
+    self.axes[-1].set_xlabel("Time (s)")
+    self.fig.tight_layout()
+
+    # Animate existing lines rather than recreating them.
+    self.animation = FuncAnimation(
+        self.fig,
+        self._update_plot,
+        interval=interval,
+        blit=False,
+        cache_frame_data=False,
+    )    
+
 def plot(
     res: SimulationResults,
     base: BaseValues | None = None,
@@ -198,47 +300,6 @@ def plot(
         Additional keyword arguments passed to plt.savefig().
 
     """
-    # Process base values and set LaTeX subscript for M
-    global M  # noqa: PLW0603
-    if base is None:
-        pu_vals = False
-        base = BaseValues.unity()
-        M = r"\mathrm{M}"
-    else:
-        pu_vals = True
-        M = r"\mathrm{m}"
-
-    # Setup plot style and dimensions
-    width, height = _setup_plot(latex)
-
-    # Set time limits
-    if t_lims is None:
-        t_lims = (0, res.mdl.t[-1])
-
-    # Subplot mapping: name -> (function, SI label, p.u. label)
-    subplot_map = {
-        "speed": (_plot_speeds, "Speed (rad/s)", "Speed (p.u.)"),
-        "torque": (_plot_torques, "Torque (Nm)", "Torque (p.u.)"),
-        "current": (_plot_currents, "Current (A)", "Current (p.u.)"),
-        "voltage": (_plot_voltages, "Voltage (V)", "Voltage (p.u.)"),
-        "flux": (_plot_flux_linkages, "Flux linkage (Vs)", "Flux linkage (p.u.)"),
-    }
-
-    if subplots is None:
-        subplots = ["speed", "torque", "current", "voltage", "flux"]
-
-    # Validate subplot names
-    for name in subplots:
-        if name not in subplot_map:
-            raise ValueError(f"Unknown subplot name: {name}")
-
-    n_subplots = len(subplots)
-    base_height = height
-    height = base_height * n_subplots / 5
-    fig, axes = plt.subplots(n_subplots, 1, figsize=(width, height), sharex=True)
-    if n_subplots == 1:
-        axes = [axes]
-
     # Plot selected subplots
     for ax, name in zip(axes, subplots, strict=True):
         plot_func, label_si, label_pu = subplot_map[name]
