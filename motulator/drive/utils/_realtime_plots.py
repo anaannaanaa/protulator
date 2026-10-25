@@ -156,11 +156,62 @@ def _plot_flux_linkages(ax, ctrl, mdl, base: BaseValues) -> None:
     ax.set_ylim(0, ymax)
 
 
-def add_sample():
-    # TODO
+def add_sample(self, t: float, values: dict[str, float]) -> None:
+    with self.lock:
+        for name, value in values.items():
+            if name not in self.data:
+                continue
 
-def _update_plot():
-    # TODO
+            self.data[name].append((t, value))
+
+
+def _update_plot(self, _frame):
+    """Update lines and maintain the rolling time window."""
+    with self.lock:
+        # Copy data while locked so the simulation can continue
+        # publishing samples during plotting.
+        snapshots = {
+            name: list(samples)
+            for name, samples in self.data.items()
+        }
+
+    latest_times = [
+        samples[-1][0]
+        for samples in snapshots.values()
+        if samples
+    ]
+
+    if not latest_times:
+        return list(self.lines.values())
+
+    t_now = max(latest_times)
+    t_min = max(0.0, t_now - self.window)
+
+    for name, samples in snapshots.items():
+        if not samples:
+            continue
+
+        # Retain only points inside the visible time window.
+        visible = [
+            (t, value)
+            for t, value in samples
+            if t >= t_min
+        ]
+
+        if visible:
+            times, values = zip(*visible)
+            self.lines[name].set_data(times, values)
+
+    for ax in self.axes:
+        ax.set_xlim(t_min, max(t_min + self.window, t_now))
+
+    return list(self.lines.values())
+
+
+def show(self):
+    """Start the Matplotlib GUI event loop."""
+    plt.show()
+
 
 def init_plotting(    
     self,
@@ -258,64 +309,65 @@ def init_plotting(
         cache_frame_data=False,
     )    
 
-def plot(
-    res: SimulationResults,
-    base: BaseValues | None = None,
-    subplots: list[str] | None = None,
-    t_lims: tuple[float, float] | None = None,
-    t_ticks: ArrayLike | None = None,
-    y_lims: list[tuple[float, float] | None] | None = None,
-    y_ticks: list[ArrayLike | None] | None = None,
-    latex: bool = False,
-    save_path: str | Path | None = None,
-    **savefig_kwargs,
-) -> None:
-    """
-    Plot example figures with selectable subplots.
 
-    Parameters
-    ----------
-    res : SimulationResults
-        Simulation results.
-    base : BaseValues, optional
-        Base values for scaling the waveforms. If not given, the waveforms are plotted
-        in SI units.
-    subplots : list[str], optional
-        List of subplot names to include. Valid names: "speed", "torque", "current",
-        "voltage", "flux". Defaults to all.
-    t_lims : tuple[float, float], optional
-        Time axis limits. If None, uses full time range.
-    t_ticks : ArrayLike, optional
-        Time axis tick locations.
-    y_lims : list[tuple[float, float] | None], optional
-        y-axis limits for each subplot.
-    y_ticks : list[ArrayLike | None], optional
-        y-axis tick locations for each subplot.
-    latex : bool, optional
-        Use LaTeX fonts for the labels. Enabling this option requires a working LaTeX
-        installation, defaults to False.
-    save_path : str | Path, optional
-        Path to save the figure. If None, the figure is not saved.
-    **savefig_kwargs
-        Additional keyword arguments passed to plt.savefig().
-
-    """
-    # Plot selected subplots
-    for ax, name in zip(axes, subplots, strict=True):
-        plot_func, label_si, label_pu = subplot_map[name]
-        if name in ["speed", "torque", "flux"]:
-            plot_func(ax, res.ctrl, res.mdl, base)
-        elif name == "current":
-            plot_func(ax, res.ctrl, base)
-        elif name == "voltage":
-            plot_func(ax, res.ctrl, base)
-        ax.set_ylabel(label_pu if pu_vals else label_si)
-
-    # Configure all axes
-    configure_axes(axes, t_lims, t_ticks, y_lims, y_ticks)
-
-    fig.align_ylabels()
-    axes[-1].set_xlabel("Time (s)")
-
-    save_and_show(save_path, **savefig_kwargs)
+#def plot(
+#    res: SimulationResults,
+#    base: BaseValues | None = None,
+#    subplots: list[str] | None = None,
+#    t_lims: tuple[float, float] | None = None,
+#    t_ticks: ArrayLike | None = None,
+#    y_lims: list[tuple[float, float] | None] | None = None,
+#    y_ticks: list[ArrayLike | None] | None = None,
+#    latex: bool = False,
+#    save_path: str | Path | None = None,
+#    **savefig_kwargs,
+#) -> None:
+#    """
+#    Plot example figures with selectable subplots.
+#
+#    Parameters
+#    ----------
+#    res : SimulationResults
+#        Simulation results.
+#    base : BaseValues, optional
+#        Base values for scaling the waveforms. If not given, the waveforms are plotted
+#        in SI units.
+#    subplots : list[str], optional
+#        List of subplot names to include. Valid names: "speed", "torque", "current",
+#        "voltage", "flux". Defaults to all.
+#    t_lims : tuple[float, float], optional
+#        Time axis limits. If None, uses full time range.
+#    t_ticks : ArrayLike, optional
+#        Time axis tick locations.
+#    y_lims : list[tuple[float, float] | None], optional
+#        y-axis limits for each subplot.
+#    y_ticks : list[ArrayLike | None], optional
+#        y-axis tick locations for each subplot.
+#    latex : bool, optional
+#        Use LaTeX fonts for the labels. Enabling this option requires a working LaTeX
+#        installation, defaults to False.
+#    save_path : str | Path, optional
+#        Path to save the figure. If None, the figure is not saved.
+#    **savefig_kwargs
+#        Additional keyword arguments passed to plt.savefig().
+#
+#    """
+#    # Plot selected subplots
+#    for ax, name in zip(axes, subplots, strict=True):
+#        plot_func, label_si, label_pu = subplot_map[name]
+#        if name in ["speed", "torque", "flux"]:
+#            plot_func(ax, res.ctrl, res.mdl, base)
+#        elif name == "current":
+#            plot_func(ax, res.ctrl, base)
+#        elif name == "voltage":
+#            plot_func(ax, res.ctrl, base)
+#        ax.set_ylabel(label_pu if pu_vals else label_si)
+#
+#    # Configure all axes
+#    configure_axes(axes, t_lims, t_ticks, y_lims, y_ticks)
+#
+#    fig.align_ylabels()
+#    axes[-1].set_xlabel("Time (s)")
+#
+#    save_and_show(save_path, **savefig_kwargs)
 

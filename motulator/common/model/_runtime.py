@@ -111,9 +111,10 @@ class Runtime:
         try:
             # Initialize outputs based on initial states
             self.mdl.set_outputs(0.0)
+
+            # Format the plotting
             utils.init_plotting(self, self.base)
             
-
             # Main simulation loop
             #progress_bar = None
             #if self.show_progress:
@@ -153,6 +154,8 @@ class Runtime:
     def _run_runtime_loop(
         self, N_eval: int
     ) -> None:
+        # Start the plot event loop
+        utils.show(self)
         """Run the main simulation loop."""
         #while self.mdl.t0 <= t_stop:
         while True: #TODO: Make better condition
@@ -188,6 +191,8 @@ class Runtime:
                     # Set the new initial time and save the solution
                     self.mdl.t0 = t_span[-1]
                     self.mdl.save(sol)
+
+                    # TODO: Add "add_sample" and "_update_plot"
 
             # Update progress after each control step
             #update_progress()

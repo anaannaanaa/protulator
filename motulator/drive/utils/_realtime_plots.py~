@@ -156,6 +156,58 @@ def _plot_flux_linkages(ax, ctrl, mdl, base: BaseValues) -> None:
     ax.set_ylim(0, ymax)
 
 
+def add_sample(self, t: float, values: dict[str, float]) -> None:
+    with self.lock:
+        for name, value in values.items():
+            if name not in self.data:
+                continue
+
+            self.data[name].append((t, value))
+
+
+    def _update_plot(self, _frame):
+        """Update lines and maintain the rolling time window."""
+        with self.lock:
+            # Copy data while locked so the simulation can continue
+            # publishing samples during plotting.
+            snapshots = {
+                name: list(samples)
+                for name, samples in self.data.items()
+            }
+
+        latest_times = [
+            samples[-1][0]
+            for samples in snapshots.values()
+            if samples
+        ]
+
+        if not latest_times:
+            return list(self.lines.values())
+
+        t_now = max(latest_times)
+        t_min = max(0.0, t_now - self.window)
+
+        for name, samples in snapshots.items():
+            if not samples:
+                continue
+
+            # Retain only points inside the visible time window.
+            visible = [
+                (t, value)
+                for t, value in samples
+                if t >= t_min
+            ]
+
+            if visible:
+                times, values = zip(*visible)
+                self.lines[name].set_data(times, values)
+
+        for ax in self.axes:
+            ax.set_xlim(t_min, max(t_min + self.window, t_now))
+
+        return list(self.lines.values())
+
+
 def init_plotting(    
     self,
     window: float = 5.0,
