@@ -113,7 +113,7 @@ class Runtime:
             self.mdl.set_outputs(0.0)
 
             # Format the plotting
-            utils.init_plotting(self, self.base)
+            utils.init_plotting(self)
             
             # Main simulation loop
             #progress_bar = None

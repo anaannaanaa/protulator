@@ -3,8 +3,11 @@
 from pathlib import Path
 
 import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
 import numpy as np
 from numpy.typing import ArrayLike
+from collections import deque
+import threading
 
 from motulator.common.model._simulation import SimulationResults
 from motulator.common.utils._plotting import (
